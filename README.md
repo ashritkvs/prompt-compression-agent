@@ -1,3 +1,14 @@
+---
+title: Prompt Compression Agent
+emoji: 🗜️
+colorFrom: gray
+colorTo: gray
+sdk: docker
+app_port: 8000
+pinned: false
+license: mit
+---
+
 # Prompt Compression Agent
 
 Compresses verbose LLM prompts using LLMLingua-2 (local, zero API cost)
