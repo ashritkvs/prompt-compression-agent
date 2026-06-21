@@ -1,54 +1,70 @@
 # yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
 #
-# Regression suite for the LIVE Prompt Compression Agent API.
+# Comprehensive promptfoo regression suite for the LIVE Prompt Compression
+# Agent API. Uses only promptfoo's own documented assertion types:
+#   is-json, javascript, latency, icontains, regex (+ per-assertion transform).
 #
 # Run from the repo root:
-#   npx promptfoo@latest eval -c promptfoo/promptfooconfig.yaml
+#   npx promptfoo@latest eval -c promptfoo/promptfooconfig.yaml --no-cache
 #   npx promptfoo@latest view          # open the results UI
 #
-# How it works:
-#   Each test POSTs a prompt to the deployed /compress endpoint and asserts on
-#   the returned JSON (reduction_pct, meaning_score, tokens, etc.). promptfoo
-#   only speaks HTTP here — the OpenAI key lives on the server (HF Space
-#   secret), so you do NOT need a key locally.
+# promptfoo only speaks HTTP, so the OpenAI key lives on the server (HF Space
+# secret) — you do NOT need a key locally. Note: the HTTP provider parses the
+# JSON response into an OBJECT before assertions run, so `output` is an object.
 #
-# Cost: every test is a real compression run = real OpenAI tokens (~$0.001
-# each). This file has ~6 tests, so a full run costs a few cents.
+# Cost: every test is a real compression run = real OpenAI tokens
+# (~$0.001-0.005 each).
 
-description: Prompt Compression Agent — live API regression suite
+description: Prompt Compression Agent — comprehensive live API suite
 
 providers:
   - id: https://ashrit25-prompt-compression-agent.hf.space/compress
-    label: hf-spaces-live
+    label: compress-live
     config:
       method: POST
       headers:
         Content-Type: application/json
       body:
         prompt: "{{prompt}}"
+      # Let 4xx validation responses (e.g. 422) through so we can assert on
+      # them instead of erroring the test.
+      validateStatus: "status < 500"
 
-# Passthrough "prompt": the {{prompt}} var is injected into the POST body above.
 prompts:
   - "{{prompt}}"
 
-# Assertions applied to EVERY test.
+# ---------------------------------------------------------------------------
+# Assertions applied to EVERY test. These tolerate both a successful
+# AgentResult and a 422 validation-error body.
+# ---------------------------------------------------------------------------
 defaultTest:
   assert:
-    # The API must return valid JSON.
+    # Always valid JSON (true for both AgentResult and the 422 error body).
     - type: is-json
-    # The agent must not have errored, and must report a numeric reduction.
+    # Response time budget — generous to tolerate a cold-start model reload.
+    - type: latency
+      threshold: 90000
+    # Structure + internal-consistency check. Skipped for 422 validation
+    # responses (which carry a `detail` field instead of AgentResult fields).
     - type: javascript
       value: |
         const r = typeof output === 'string' ? JSON.parse(output) : output;
+        if (r && r.detail) return true; // validation-error response: skip
+        const required = ['original_prompt','compressed_prompt','original_tokens',
+          'compressed_tokens','tokens_saved','reduction_pct','meaning_score',
+          'total_steps','steps','success'];
+        for (const k of required) if (!(k in r)) throw new Error('missing field: ' + k);
         if (r.failure_reason) throw new Error('agent error: ' + r.failure_reason);
-        if (typeof r.reduction_pct !== 'number') throw new Error('missing reduction_pct');
+        if (r.original_tokens - r.compressed_tokens !== r.tokens_saved)
+          throw new Error('tokens_saved inconsistent');
+        if (r.total_steps < 1) throw new Error('no steps recorded');
+        if (!Array.isArray(r.steps) || r.steps.length === 0)
+          throw new Error('no step trace');
         return true;
-    # Cold start can be slow (model reload on a sleeping Space) — be generous.
-    - type: latency
-      threshold: 90000
 
 tests:
-  - description: Extremely verbose — should compress hard and stay shorter
+  # ----- Compression quality across verbosity levels -----
+  - description: Extremely verbose — compress hard, keep core meaning
     vars:
       prompt: >-
         Could you please possibly help me understand in a very detailed and
@@ -59,13 +75,13 @@ tests:
         value: |
           const r = typeof output === 'string' ? JSON.parse(output) : output;
           if (r.compressed_tokens >= r.original_tokens) throw new Error('did not shrink');
-          if (r.reduction_pct < 25) throw new Error('reduction too low: ' + r.reduction_pct + '%');
-          return true;
-      - type: javascript
-        value: |
-          const r = typeof output === 'string' ? JSON.parse(output) : output;
+          if (r.reduction_pct < 25) throw new Error('reduction too low: ' + r.reduction_pct);
           if (r.meaning_score < 55) throw new Error('meaning too low: ' + r.meaning_score);
           return true;
+      # Core subject must survive compression (icontains + transform).
+      - type: icontains
+        value: machine learning
+        transform: "(typeof output === 'string' ? JSON.parse(output) : output).compressed_prompt"
 
   - description: Verbose essay request — meaningful reduction
     vars:
@@ -78,8 +94,11 @@ tests:
       - type: javascript
         value: |
           const r = typeof output === 'string' ? JSON.parse(output) : output;
-          if (r.reduction_pct < 25) throw new Error('reduction too low: ' + r.reduction_pct + '%');
+          if (r.reduction_pct < 25) throw new Error('reduction too low: ' + r.reduction_pct);
           return true;
+      - type: icontains
+        value: sourdough
+        transform: "(typeof output === 'string' ? JSON.parse(output) : output).compressed_prompt"
 
   - description: Moderately verbose — should still shrink
     vars:
@@ -92,10 +111,10 @@ tests:
         value: |
           const r = typeof output === 'string' ? JSON.parse(output) : output;
           if (r.compressed_tokens >= r.original_tokens) throw new Error('did not shrink');
-          if (r.reduction_pct < 15) throw new Error('reduction too low: ' + r.reduction_pct + '%');
+          if (r.reduction_pct < 15) throw new Error('reduction too low: ' + r.reduction_pct);
           return true;
 
-  - description: Meaning preserved for a clear technical ask
+  - description: Technical ask — meaning preserved, key term survives (regex)
     vars:
       prompt: >-
         Please explain the difference between TCP and UDP protocols and when you
@@ -106,8 +125,12 @@ tests:
           const r = typeof output === 'string' ? JSON.parse(output) : output;
           if (r.meaning_score < 60) throw new Error('meaning too low: ' + r.meaning_score);
           return true;
+      - type: regex
+        value: "TCP|UDP"
+        transform: "(typeof output === 'string' ? JSON.parse(output) : output).compressed_prompt"
 
-  - description: Already-concise control — must not error, compressed not empty
+  # ----- Concise controls -----
+  - description: Already-concise control — must not error, output non-empty
     vars:
       prompt: "Explain the difference between HTTP and HTTPS."
     assert:
@@ -119,13 +142,72 @@ tests:
           if (r.reduction_pct < 0) throw new Error('negative reduction');
           return true;
 
-  - description: Short control — token accounting is consistent
+  - description: Short control — minimal but valid
     vars:
       prompt: "Define recursion and give one example."
     assert:
       - type: javascript
         value: |
           const r = typeof output === 'string' ? JSON.parse(output) : output;
-          if (r.original_tokens - r.compressed_tokens !== r.tokens_saved)
-            throw new Error('tokens_saved inconsistent');
+          if (r.compressed_tokens < 1) throw new Error('compressed away to nothing');
+          return true;
+
+  # ----- Edge cases -----
+  - description: Non-English (Spanish) — multilingual model should handle it
+    vars:
+      prompt: >-
+        Por favor, ¿podrías explicarme de manera muy detallada y completa qué es
+        el aprendizaje automático y cuáles son sus diferentes tipos?
+    assert:
+      - type: javascript
+        value: |
+          const r = typeof output === 'string' ? JSON.parse(output) : output;
+          if (!r.compressed_prompt || r.compressed_prompt.trim().length === 0)
+            throw new Error('empty output for non-English input');
+          return true;
+
+  - description: Code / special characters — must not crash the pipeline
+    vars:
+      prompt: >-
+        Please review this function and explain what it does in detail:
+        def add(a, b): return a + b  # simple helper, used everywhere {x: 1}
+    assert:
+      - type: javascript
+        value: |
+          const r = typeof output === 'string' ? JSON.parse(output) : output;
+          if (r.failure_reason) throw new Error('crashed on code input');
+          if (!r.compressed_prompt) throw new Error('empty output');
+          return true;
+
+  - description: Near-minimum length boundary — just over 10 chars, must work
+    vars:
+      prompt: "Explain DNS basics."
+    assert:
+      - type: javascript
+        value: |
+          const r = typeof output === 'string' ? JSON.parse(output) : output;
+          if (r.failure_reason) throw new Error('failed on short valid input');
+          return true;
+
+  # ----- Input validation (expect HTTP 422 with a clear message) -----
+  - description: Too short (< 10 chars) — server rejects with validation error
+    vars:
+      prompt: "hi"
+    assert:
+      - type: javascript
+        value: |
+          const s = typeof output === 'string' ? output : JSON.stringify(output);
+          if (!s.includes('Prompt too short'))
+            throw new Error('expected too-short validation error, got: ' + s.slice(0, 200));
+          return true;
+
+  - description: Too long (> 3000 chars) — server rejects with validation error
+    vars:
+      prompt: file://long_prompt.txt
+    assert:
+      - type: javascript
+        value: |
+          const s = typeof output === 'string' ? output : JSON.stringify(output);
+          if (!s.includes('Prompt too long'))
+            throw new Error('expected too-long validation error, got: ' + s.slice(0, 200));
           return true;
