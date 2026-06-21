@@ -11,6 +11,14 @@ license: mit
 
 # Prompt Compression Agent
 
+**🚀 Live demo:** [ashrit25-prompt-compression-agent.hf.space](https://ashrit25-prompt-compression-agent.hf.space)
+
+[![Open in Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/ashrit25/prompt-compression-agent)
+
+> Hosted free on Hugging Face Spaces (CPU). The Space sleeps after ~48h idle —
+> the first request after sleeping takes ~30s to reload the model, then it's
+> responsive.
+
 Compresses verbose LLM prompts using LLMLingua-2 (local, zero API cost)
 and verifies meaning preservation with an OpenAI model (one API call per run).
 
@@ -35,7 +43,7 @@ realized reduction, up to 4 compression attempts.
 ## Setup
 
 ```bash
-git clone https://github.com/yourname/prompt-compression-agent
+git clone https://github.com/ashritkvs/prompt-compression-agent
 cd prompt-compression-agent
 pip install -r requirements.txt
 cp .env.example .env
