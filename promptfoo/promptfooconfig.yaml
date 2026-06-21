@@ -1,0 +1,131 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# Regression suite for the LIVE Prompt Compression Agent API.
+#
+# Run from the repo root:
+#   npx promptfoo@latest eval -c promptfoo/promptfooconfig.yaml
+#   npx promptfoo@latest view          # open the results UI
+#
+# How it works:
+#   Each test POSTs a prompt to the deployed /compress endpoint and asserts on
+#   the returned JSON (reduction_pct, meaning_score, tokens, etc.). promptfoo
+#   only speaks HTTP here — the OpenAI key lives on the server (HF Space
+#   secret), so you do NOT need a key locally.
+#
+# Cost: every test is a real compression run = real OpenAI tokens (~$0.001
+# each). This file has ~6 tests, so a full run costs a few cents.
+
+description: Prompt Compression Agent — live API regression suite
+
+providers:
+  - id: https://ashrit25-prompt-compression-agent.hf.space/compress
+    label: hf-spaces-live
+    config:
+      method: POST
+      headers:
+        Content-Type: application/json
+      body:
+        prompt: "{{prompt}}"
+
+# Passthrough "prompt": the {{prompt}} var is injected into the POST body above.
+prompts:
+  - "{{prompt}}"
+
+# Assertions applied to EVERY test.
+defaultTest:
+  assert:
+    # The API must return valid JSON.
+    - type: is-json
+    # The agent must not have errored, and must report a numeric reduction.
+    - type: javascript
+      value: |
+        const r = typeof output === 'string' ? JSON.parse(output) : output;
+        if (r.failure_reason) throw new Error('agent error: ' + r.failure_reason);
+        if (typeof r.reduction_pct !== 'number') throw new Error('missing reduction_pct');
+        return true;
+    # Cold start can be slow (model reload on a sleeping Space) — be generous.
+    - type: latency
+      threshold: 90000
+
+tests:
+  - description: Extremely verbose — should compress hard and stay shorter
+    vars:
+      prompt: >-
+        Could you please possibly help me understand in a very detailed and
+        comprehensive way what machine learning actually is, including all the
+        different types and subtypes if at all possible?
+    assert:
+      - type: javascript
+        value: |
+          const r = typeof output === 'string' ? JSON.parse(output) : output;
+          if (r.compressed_tokens >= r.original_tokens) throw new Error('did not shrink');
+          if (r.reduction_pct < 25) throw new Error('reduction too low: ' + r.reduction_pct + '%');
+          return true;
+      - type: javascript
+        value: |
+          const r = typeof output === 'string' ? JSON.parse(output) : output;
+          if (r.meaning_score < 55) throw new Error('meaning too low: ' + r.meaning_score);
+          return true;
+
+  - description: Verbose essay request — meaningful reduction
+    vars:
+      prompt: >-
+        I would like to kindly request, if it is at all possible, that you
+        please write a very detailed and comprehensive and thorough step by
+        step guide explaining how to actually bake a perfect sourdough bread
+        loaf from scratch, including all the little tips and tricks.
+    assert:
+      - type: javascript
+        value: |
+          const r = typeof output === 'string' ? JSON.parse(output) : output;
+          if (r.reduction_pct < 25) throw new Error('reduction too low: ' + r.reduction_pct + '%');
+          return true;
+
+  - description: Moderately verbose — should still shrink
+    vars:
+      prompt: >-
+        Could you please help me understand how neural networks learn, and
+        explain backpropagation in a fairly detailed way if possible, because I
+        just wanted to understand how the weights are actually updated.
+    assert:
+      - type: javascript
+        value: |
+          const r = typeof output === 'string' ? JSON.parse(output) : output;
+          if (r.compressed_tokens >= r.original_tokens) throw new Error('did not shrink');
+          if (r.reduction_pct < 15) throw new Error('reduction too low: ' + r.reduction_pct + '%');
+          return true;
+
+  - description: Meaning preserved for a clear technical ask
+    vars:
+      prompt: >-
+        Please explain the difference between TCP and UDP protocols and when you
+        would actually want to use each one in real world networking.
+    assert:
+      - type: javascript
+        value: |
+          const r = typeof output === 'string' ? JSON.parse(output) : output;
+          if (r.meaning_score < 60) throw new Error('meaning too low: ' + r.meaning_score);
+          return true;
+
+  - description: Already-concise control — must not error, compressed not empty
+    vars:
+      prompt: "Explain the difference between HTTP and HTTPS."
+    assert:
+      - type: javascript
+        value: |
+          const r = typeof output === 'string' ? JSON.parse(output) : output;
+          if (!r.compressed_prompt || r.compressed_prompt.trim().length === 0)
+            throw new Error('empty compressed prompt');
+          if (r.reduction_pct < 0) throw new Error('negative reduction');
+          return true;
+
+  - description: Short control — token accounting is consistent
+    vars:
+      prompt: "Define recursion and give one example."
+    assert:
+      - type: javascript
+        value: |
+          const r = typeof output === 'string' ? JSON.parse(output) : output;
+          if (r.original_tokens - r.compressed_tokens !== r.tokens_saved)
+            throw new Error('tokens_saved inconsistent');
+          return true;
