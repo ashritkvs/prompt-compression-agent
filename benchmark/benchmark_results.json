@@ -1,0 +1,233 @@
+{
+  "timestamp": "2026-06-21T17:11:40.368250+00:00",
+  "summary": {
+    "total_prompts": 20,
+    "avg_reduction_pct": 47.1,
+    "avg_meaning_score": 79.2,
+    "avg_steps": 6.0,
+    "success_rate": 85.0,
+    "avg_time_ms": 15753
+  },
+  "results": [
+    {
+      "preview": "I was wondering if you could please poss",
+      "original_tokens": 103,
+      "compressed_tokens": 79,
+      "tokens_saved": 24,
+      "reduction_pct": 23.3,
+      "meaning_score": 60,
+      "total_steps": 8,
+      "success": false,
+      "time_taken_ms": 33852
+    },
+    {
+      "preview": "Could you please, at your earliest conve",
+      "original_tokens": 99,
+      "compressed_tokens": 46,
+      "tokens_saved": 53,
+      "reduction_pct": 53.5,
+      "meaning_score": 75,
+      "total_steps": 4,
+      "success": true,
+      "time_taken_ms": 16371
+    },
+    {
+      "preview": "I would like to kindly request, if it is",
+      "original_tokens": 104,
+      "compressed_tokens": 58,
+      "tokens_saved": 46,
+      "reduction_pct": 44.2,
+      "meaning_score": 75,
+      "total_steps": 6,
+      "success": true,
+      "time_taken_ms": 22907
+    },
+    {
+      "preview": "Please could you possibly maybe help me ",
+      "original_tokens": 96,
+      "compressed_tokens": 65,
+      "tokens_saved": 31,
+      "reduction_pct": 32.3,
+      "meaning_score": 85,
+      "total_steps": 8,
+      "success": true,
+      "time_taken_ms": 30390
+    },
+    {
+      "preview": "I was just wondering if you could please",
+      "original_tokens": 95,
+      "compressed_tokens": 45,
+      "tokens_saved": 50,
+      "reduction_pct": 52.6,
+      "meaning_score": 80,
+      "total_steps": 4,
+      "success": true,
+      "time_taken_ms": 14567
+    },
+    {
+      "preview": "Could you please help me understand how ",
+      "original_tokens": 61,
+      "compressed_tokens": 27,
+      "tokens_saved": 34,
+      "reduction_pct": 55.7,
+      "meaning_score": 80,
+      "total_steps": 4,
+      "success": true,
+      "time_taken_ms": 11211
+    },
+    {
+      "preview": "I would like you to please write a fairl",
+      "original_tokens": 59,
+      "compressed_tokens": 27,
+      "tokens_saved": 32,
+      "reduction_pct": 54.2,
+      "meaning_score": 85,
+      "total_steps": 4,
+      "success": true,
+      "time_taken_ms": 11764
+    },
+    {
+      "preview": "Please could you actually explain to me ",
+      "original_tokens": 52,
+      "compressed_tokens": 17,
+      "tokens_saved": 35,
+      "reduction_pct": 67.3,
+      "meaning_score": 70,
+      "total_steps": 8,
+      "success": false,
+      "time_taken_ms": 23099
+    },
+    {
+      "preview": "I was wondering if you could possibly he",
+      "original_tokens": 57,
+      "compressed_tokens": 32,
+      "tokens_saved": 25,
+      "reduction_pct": 43.9,
+      "meaning_score": 85,
+      "total_steps": 6,
+      "success": true,
+      "time_taken_ms": 17082
+    },
+    {
+      "preview": "Could you kindly explain how photosynthe",
+      "original_tokens": 51,
+      "compressed_tokens": 24,
+      "tokens_saved": 27,
+      "reduction_pct": 52.9,
+      "meaning_score": 85,
+      "total_steps": 4,
+      "success": true,
+      "time_taken_ms": 11277
+    },
+    {
+      "preview": "Could you please explain what a REST API",
+      "original_tokens": 27,
+      "compressed_tokens": 15,
+      "tokens_saved": 12,
+      "reduction_pct": 44.4,
+      "meaning_score": 80,
+      "total_steps": 6,
+      "success": true,
+      "time_taken_ms": 11931
+    },
+    {
+      "preview": "I would like you to summarize the plot o",
+      "original_tokens": 25,
+      "compressed_tokens": 13,
+      "tokens_saved": 12,
+      "reduction_pct": 48.0,
+      "meaning_score": 85,
+      "total_steps": 6,
+      "success": true,
+      "time_taken_ms": 11291
+    },
+    {
+      "preview": "Please help me understand the difference",
+      "original_tokens": 23,
+      "compressed_tokens": 13,
+      "tokens_saved": 10,
+      "reduction_pct": 43.5,
+      "meaning_score": 80,
+      "total_steps": 6,
+      "success": true,
+      "time_taken_ms": 11198
+    },
+    {
+      "preview": "Could you actually explain how compound ",
+      "original_tokens": 19,
+      "compressed_tokens": 13,
+      "tokens_saved": 6,
+      "reduction_pct": 31.6,
+      "meaning_score": 80,
+      "total_steps": 8,
+      "success": true,
+      "time_taken_ms": 17311
+    },
+    {
+      "preview": "I was wondering if you could explain wha",
+      "original_tokens": 20,
+      "compressed_tokens": 5,
+      "tokens_saved": 15,
+      "reduction_pct": 75.0,
+      "meaning_score": 60,
+      "total_steps": 8,
+      "success": false,
+      "time_taken_ms": 20273
+    },
+    {
+      "preview": "Explain the difference between HTTP and ",
+      "original_tokens": 9,
+      "compressed_tokens": 5,
+      "tokens_saved": 4,
+      "reduction_pct": 44.4,
+      "meaning_score": 85,
+      "total_steps": 6,
+      "success": true,
+      "time_taken_ms": 9690
+    },
+    {
+      "preview": "Summarize the theory of relativity in tw",
+      "original_tokens": 12,
+      "compressed_tokens": 8,
+      "tokens_saved": 4,
+      "reduction_pct": 33.3,
+      "meaning_score": 85,
+      "total_steps": 8,
+      "success": true,
+      "time_taken_ms": 16549
+    },
+    {
+      "preview": "List the primary colors and how to mix t",
+      "original_tokens": 10,
+      "compressed_tokens": 5,
+      "tokens_saved": 5,
+      "reduction_pct": 50.0,
+      "meaning_score": 75,
+      "total_steps": 4,
+      "success": true,
+      "time_taken_ms": 5666
+    },
+    {
+      "preview": "Write a Python function that reverses a ",
+      "original_tokens": 10,
+      "compressed_tokens": 5,
+      "tokens_saved": 5,
+      "reduction_pct": 50.0,
+      "meaning_score": 85,
+      "total_steps": 6,
+      "success": true,
+      "time_taken_ms": 10127
+    },
+    {
+      "preview": "Define recursion and give one example.",
+      "original_tokens": 7,
+      "compressed_tokens": 4,
+      "tokens_saved": 3,
+      "reduction_pct": 42.9,
+      "meaning_score": 90,
+      "total_steps": 6,
+      "success": true,
+      "time_taken_ms": 8495
+    }
+  ]
+}

@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Prompt Compression Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap"
+  rel="stylesheet"
+/>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    border-radius: 0;
+  }
+
+  html,
+  body {
+    background: #ffffff;
+    color: #000000;
+    font-family: "Inter", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 16px 64px;
+  }
+
+  /* 1. HEADER */
+  .header {
+    padding: 24px 0;
+    border-bottom: 1px solid #000000;
+  }
+  .header .title {
+    font-size: 13px;
+    color: #444444;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .header .sub {
+    font-size: 12px;
+    color: #444444;
+    margin-top: 4px;
+  }
+
+  /* generic section label */
+  .label {
+    font-size: 11px;
+    color: #444444;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .label-sm {
+    font-size: 10px;
+    color: #444444;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* 2. INPUT SECTION */
+  .section {
+    margin-top: 28px;
+  }
+  textarea {
+    display: block;
+    width: 100%;
+    height: 140px;
+    margin-top: 8px;
+    padding: 12px;
+    border: 1px solid #000000;
+    background: #ffffff;
+    color: #000000;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    resize: none;
+    outline: none;
+  }
+  .token-counter {
+    text-align: right;
+    font-size: 12px;
+    color: #444444;
+    margin-top: 6px;
+  }
+  .run-btn {
+    width: 100%;
+    height: 44px;
+    margin-top: 12px;
+    background: #000000;
+    color: #ffffff;
+    border: none;
+    font-family: "Inter", sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+  }
+  .run-btn:hover {
+    background: #222222;
+  }
+  .run-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  /* 3. STATS ROW */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    margin-top: 28px;
+  }
+  .stat {
+    border: 1px solid #000000;
+    margin-left: -1px;
+    padding: 16px;
+  }
+  .stat:first-child {
+    margin-left: 0;
+  }
+  .stat .stat-label {
+    font-size: 10px;
+    color: #444444;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .stat .stat-value {
+    font-size: 28px;
+    font-weight: 500;
+    color: #000000;
+    margin-top: 6px;
+  }
+
+  /* 4. COMPARISON PANELS */
+  .panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-top: 28px;
+  }
+  .panel {
+    border: 1px solid #000000;
+    margin-left: -1px;
+  }
+  .panel:first-child {
+    margin-left: 0;
+  }
+  .panel-head {
+    padding: 10px;
+    border-bottom: 1px solid #cccccc;
+    font-size: 10px;
+    color: #444444;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .panel-body {
+    padding: 12px;
+    min-height: 100px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #000000;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+  .panel-body.placeholder {
+    color: #888888;
+  }
+
+  /* 5. REDUCTION BAR */
+  .reduction-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #444444;
+  }
+  .bar-container {
+    margin-top: 8px;
+    width: 100%;
+    height: 4px;
+    background: #f5f5f5;
+    border: 1px solid #cccccc;
+  }
+  .bar-fill {
+    height: 100%;
+    width: 0%;
+    background: #000000;
+    transition: width 0.6s ease;
+  }
+
+  /* 6. AGENT TRACE */
+  .trace {
+    margin-top: 8px;
+    width: 100%;
+    background: #111111;
+    border: 1px solid #000000;
+    min-height: 200px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 16px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .trace .line {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .trace .waiting {
+    color: #444444;
+  }
+  .trace .tool {
+    color: #ffffff;
+    font-weight: 500;
+  }
+  .trace .out {
+    color: #cccccc;
+  }
+  .trace .done {
+    color: #ffffff;
+    font-weight: 500;
+  }
+  .trace .err {
+    color: #ff0000;
+  }
+
+  /* 7. HISTORY */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+  }
+  thead th {
+    text-align: left;
+    font-size: 10px;
+    color: #444444;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+    padding: 8px 6px;
+    border-bottom: 1px solid #cccccc;
+  }
+  tbody td {
+    font-size: 13px;
+    color: #000000;
+    padding: 0 6px;
+    height: 32px;
+    border-bottom: 1px solid #f5f5f5;
+  }
+  tbody td.preview {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    color: #444444;
+  }
+  tbody td.empty {
+    text-align: center;
+    color: #888888;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- 1. HEADER -->
+  <div class="header">
+    <div class="title">Prompt Compression Agent</div>
+    <div class="sub">LLMLingua-2 + Claude Haiku</div>
+  </div>
+
+  <!-- 2. INPUT -->
+  <div class="section">
+    <div class="label">Input Prompt</div>
+    <textarea
+      id="promptInput"
+      placeholder="Paste a verbose prompt here..."
+    ></textarea>
+    <div class="token-counter" id="tokenCounter">~0 tokens</div>
+    <button class="run-btn" id="runBtn">RUN AGENT →</button>
+  </div>
+
+  <!-- 3. STATS -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">Original Tokens</div>
+      <div class="stat-value" id="statOriginal">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Compressed Tokens</div>
+      <div class="stat-value" id="statCompressed">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Tokens Saved</div>
+      <div class="stat-value" id="statSaved">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Agent Steps</div>
+      <div class="stat-value" id="statSteps">—</div>
+    </div>
+  </div>
+
+  <!-- 4. PANELS -->
+  <div class="panels">
+    <div class="panel">
+      <div class="panel-head">Original</div>
+      <div class="panel-body placeholder" id="panelOriginal">
+        Waiting for input...
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">Compressed</div>
+      <div class="panel-body placeholder" id="panelCompressed">
+        Waiting for agent...
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. REDUCTION BAR -->
+  <div class="section">
+    <div class="reduction-head">
+      <span>Token Reduction</span>
+      <span id="reductionPct">0%</span>
+    </div>
+    <div class="bar-container">
+      <div class="bar-fill" id="barFill"></div>
+    </div>
+  </div>
+
+  <!-- 6. TRACE -->
+  <div class="section">
+    <div class="label-sm">Agent Trace</div>
+    <div class="trace" id="trace">
+      <div class="line waiting">Waiting for agent run...</div>
+    </div>
+  </div>
+
+  <!-- 7. HISTORY -->
+  <div class="section">
+    <div class="label-sm">History</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Preview</th>
+          <th>Orig</th>
+          <th>Comp</th>
+          <th>Saved</th>
+          <th>Score</th>
+          <th>Steps</th>
+        </tr>
+      </thead>
+      <tbody id="historyBody">
+        <tr>
+          <td class="empty" colspan="7">No runs yet.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const promptInput = document.getElementById("promptInput");
+  const tokenCounter = document.getElementById("tokenCounter");
+  const runBtn = document.getElementById("runBtn");
+  const trace = document.getElementById("trace");
+
+  const statOriginal = document.getElementById("statOriginal");
+  const statCompressed = document.getElementById("statCompressed");
+  const statSaved = document.getElementById("statSaved");
+  const statSteps = document.getElementById("statSteps");
+
+  const panelOriginal = document.getElementById("panelOriginal");
+  const panelCompressed = document.getElementById("panelCompressed");
+
+  const reductionPct = document.getElementById("reductionPct");
+  const barFill = document.getElementById("barFill");
+  const historyBody = document.getElementById("historyBody");
+
+  const history = [];
+  let reconnectAttempts = 0;
+  let running = false;
+
+  // Use wss:// when the page is served over https so deployment works on Render.
+  const WS_PROTO = window.location.protocol === "https:" ? "wss" : "ws";
+  const WS_URL = `${WS_PROTO}://${window.location.host}/ws/compress`;
+
+  // ---- live token counter ----
+  promptInput.addEventListener("input", () => {
+    const words = promptInput.value.trim().split(/\s+/).filter(Boolean).length;
+    const approxTokens = Math.ceil(words * 1.35);
+    tokenCounter.textContent = `~${approxTokens} tokens`;
+  });
+
+  function appendTrace(html, cls) {
+    const div = document.createElement("div");
+    div.className = "line" + (cls ? " " + cls : "");
+    div.innerHTML = html;
+    trace.appendChild(div);
+    trace.scrollTop = trace.scrollHeight;
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  function summarizeOutput(out) {
+    let s = String(out).replace(/\s+/g, " ").trim();
+    if (s.length > 120) s = s.slice(0, 120) + "…";
+    return s;
+  }
+
+  function resetUI() {
+    trace.innerHTML = "";
+    statOriginal.textContent = "—";
+    statCompressed.textContent = "—";
+    statSaved.textContent = "—";
+    statSteps.textContent = "—";
+    panelCompressed.textContent = "Waiting for agent...";
+    panelCompressed.classList.add("placeholder");
+    reductionPct.textContent = "0%";
+    barFill.style.width = "0%";
+  }
+
+  function renderHistory() {
+    if (history.length === 0) {
+      historyBody.innerHTML =
+        '<tr><td class="empty" colspan="7">No runs yet.</td></tr>';
+      return;
+    }
+    historyBody.innerHTML = "";
+    history.forEach((h) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML =
+        `<td>${h.time}</td>` +
+        `<td class="preview">${escapeHtml(h.preview)}</td>` +
+        `<td>${h.orig}</td>` +
+        `<td>${h.comp}</td>` +
+        `<td>+${h.saved}</td>` +
+        `<td>${h.score}</td>` +
+        `<td>${h.steps}</td>`;
+      historyBody.appendChild(tr);
+    });
+  }
+
+  function setRunning(state) {
+    running = state;
+    runBtn.disabled = state;
+    runBtn.textContent = state ? "RUNNING..." : "RUN AGENT →";
+  }
+
+  function startRun() {
+    const prompt = promptInput.value.trim();
+    if (prompt.length < 10) {
+      resetUI();
+      appendTrace("Prompt must be at least 10 characters.", "err");
+      return;
+    }
+
+    resetUI();
+    panelOriginal.textContent = prompt;
+    panelOriginal.classList.remove("placeholder");
+    setRunning(true);
+    appendTrace("Connecting to agent...", "waiting");
+
+    openSocket(prompt);
+  }
+
+  function openSocket(prompt) {
+    let ws;
+    try {
+      ws = new WebSocket(WS_URL);
+    } catch (e) {
+      handleConnError(prompt);
+      return;
+    }
+
+    ws.onopen = () => {
+      reconnectAttempts = 0;
+      ws.send(JSON.stringify({ prompt }));
+    };
+
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+
+      if (msg.type === "step") {
+        const d = msg.data;
+        appendTrace(
+          `[ ${d.step_num} ] ` +
+            `<span class="tool">${escapeHtml(d.tool_name)}</span> → ` +
+            `<span class="out">${escapeHtml(
+              summarizeOutput(d.tool_output)
+            )}</span>`
+        );
+      } else if (msg.type === "complete") {
+        const r = msg.result;
+        statOriginal.textContent = r.original_tokens;
+        statCompressed.textContent = r.compressed_tokens;
+        statSaved.textContent = "+" + r.tokens_saved;
+        statSteps.textContent = r.total_steps;
+
+        panelCompressed.textContent = r.compressed_prompt;
+        panelCompressed.classList.remove("placeholder");
+
+        const pct = Math.max(0, Math.min(100, r.reduction_pct));
+        reductionPct.textContent = r.reduction_pct + "%";
+        requestAnimationFrame(() => {
+          barFill.style.width = pct + "%";
+        });
+
+        appendTrace(
+          `[ DONE ] compressed ${r.original_tokens}→${r.compressed_tokens} ` +
+            `tokens  (${r.reduction_pct}% reduction)`,
+          "done"
+        );
+
+        const now = new Date();
+        const time = now.toTimeString().slice(0, 8);
+        let preview = r.original_prompt.slice(0, 45);
+        if (r.original_prompt.length > 45) preview += "...";
+        history.unshift({
+          time,
+          preview,
+          orig: r.original_tokens,
+          comp: r.compressed_tokens,
+          saved: r.tokens_saved,
+          score: r.meaning_score,
+          steps: r.total_steps,
+        });
+        if (history.length > 10) history.pop();
+        renderHistory();
+
+        setRunning(false);
+        ws.close();
+      } else if (msg.type === "error") {
+        appendTrace("ERROR: " + escapeHtml(msg.message), "err");
+        setRunning(false);
+        ws.close();
+      }
+    };
+
+    ws.onerror = () => {
+      // onclose will follow; handle reconnect there.
+    };
+
+    ws.onclose = (ev) => {
+      if (running && !ev.wasClean) {
+        handleConnError(prompt);
+      }
+    };
+  }
+
+  function handleConnError(prompt) {
+    if (reconnectAttempts >= 3) {
+      appendTrace("Connection failed after 3 attempts.", "err");
+      setRunning(false);
+      return;
+    }
+    const delay = Math.pow(2, reconnectAttempts) * 1000; // 1s, 2s, 4s
+    reconnectAttempts++;
+    appendTrace(
+      `Connection error — retrying (${reconnectAttempts}/3)...`,
+      "err"
+    );
+    setTimeout(() => {
+      if (running) openSocket(prompt);
+    }, delay);
+  }
+
+  runBtn.addEventListener("click", () => {
+    if (!running) startRun();
+  });
+</script>
+</body>
+</html>
